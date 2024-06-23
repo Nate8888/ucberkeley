@@ -1,0 +1,6 @@
+runtime: python39  # Use the appropriate Python version
+env: standard
+
+handlers:
+  - url: /.*
+    script: auto
