@@ -308,6 +308,19 @@ def speaker_summary_agent(p):
         print('Failed to parse JSON string:', spoken_txt)
         raise
 
+def combine_data_with_speaker_summary_and_audio(events):
+    combined_data = []
+    for event in events:
+        speaker_summary = speaker_summary_agent(event)
+        audio_url, duration = convert_to_speech_and_upload(speaker_summary)
+        combined_data.append({
+            "event": event["event"],
+            "description": event["description"],
+            "speaker_summary": speaker_summary,
+            "duration": duration,
+            "audio_url": audio_url
+        })
+    return combined_data
 # posts = fetch_reddit_posts_and_comments('news', 5)
 # print(posts)
 
