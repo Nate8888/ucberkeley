@@ -3,14 +3,42 @@ import os
 from dotenv import load_dotenv
 import praw
 from praw.models import MoreComments
+from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core.chat_engine import CondensePlusContextChatEngine
+from llama_index.core import PromptTemplate
+from llama_index.llms.openai import OpenAI
+from llama_index.retrievers.you import YouRetriever
+import datetime
 
 # load_env()
 load_dotenv()
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
-reddit = praw.Reddit(client_id=REDDIT_CLIENT_ID, client_secret=REDDIT_CLIENT_SECRET, user_agent=REDDIT_USER_AGENT)
 
+reddit = praw.Reddit(client_id=REDDIT_CLIENT_ID, client_secret=REDDIT_CLIENT_SECRET, user_agent=REDDIT_USER_AGENT)
+retriever = YouRetriever()
+memory = ChatMemoryBuffer.from_defaults(token_limit=100000)
+llm = OpenAI(model="gpt-4o")
+youdotcom_chat = CondensePlusContextChatEngine.from_defaults(
+    retriever=retriever,
+    memory=memory,
+    llm=llm,
+)
+curr_month = datetime.datetime.now().strftime("%B")
+
+def prompt_news_crawler():
+    NEWS_CRAWLER = """You're a top-tier reporter focused on SOLELY NEGATIVE news about the entire WORLD in June, 2024\n
+YOU SHOULD ALWAYS RESEARCH THE FOLLOWING QUERIES: \n
+1. Natural Disaster news and latest development\n
+2. Unforseen Disasters in areas all over the world\n
+3. Big Changes in Regulation\n
+YOU SHOULD AVOID THE FOLLOWING QUERIES: \n
+1. Do not provide general facts of holidays. Solely focus on world news. \n
+"""
+    response = youdotcom_chat.chat(NEWS_CRAWLER)
+    print(response)
+    return response
 
 def fetch_reddit_posts_and_comments(subreddit='news', limit=10):
     posts = []
@@ -44,8 +72,8 @@ def get_transcript(video_id):
     except:
         return None
 
-posts = fetch_reddit_posts_and_comments('news', 5)
-print(posts)
+# posts = fetch_reddit_posts_and_comments('news', 5)
+# print(posts)
 
 # for subreddit in reddit.subreddits.default(limit=None):
 #     print(subreddit)
@@ -54,3 +82,5 @@ print(posts)
 # for video_id in video_ids:
 #     print(get_transcript(video_id))
 #     print("--------------------------------------------------")
+
+prompt_news_crawler()
