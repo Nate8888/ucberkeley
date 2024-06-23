@@ -11,7 +11,9 @@ const CollapsibleSection = ({ title, children }) => {
   return (
     <View style={styles.collapsibleSection}>
       <TouchableOpacity onPress={() => setCollapsed(!collapsed)}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>{title}</ThemedText>
+        <ThemedText type="subtitle" style={styles.sectionTitle}>
+          {title} <Ionicons name={collapsed ? 'chevron-down' : 'chevron-up'} size={16} />
+        </ThemedText>
       </TouchableOpacity>
       {!collapsed && <View style={styles.collapsibleContent}>{children}</View>}
     </View>
@@ -43,14 +45,16 @@ export default function TabTwoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#d0d0d0', // Consistent background color
+    backgroundColor: '#f0f0f0', // Consistent background color
     padding: 16,
-    paddingTop: StatusBar.currentHeight + 80, // Push down the content more
+    paddingTop: StatusBar.currentHeight + 100, // Push down the content more
   },
   mainHeader: {
     textAlign: 'center',
-    marginBottom: 40, // Move down the main header
+    marginBottom: 60, // Move down the main header
     color: 'black', // Set the title color to black
+    fontSize: 32, // Match the font size of "What's up, Nate 👋"
+    fontWeight: 'bold', // Make the main header bold
   },
   scrollContent: {
     flexGrow: 1,
@@ -60,10 +64,19 @@ const styles = StyleSheet.create({
   collapsibleSection: {
     width: '100%',
     marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     marginBottom: 8,
+    fontWeight: 'bold',
+    color: '#333', // Darker color for section titles
   },
   collapsibleContent: {
     paddingLeft: 16,
@@ -71,5 +84,6 @@ const styles = StyleSheet.create({
   bullet: {
     fontSize: 16,
     marginBottom: 4,
+    color: '#666', // Slightly darker gray for bullets
   },
 });
