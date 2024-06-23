@@ -1,89 +1,104 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, View, StatusBar, ScrollView, TouchableOpacity, Text } from 'react-native';
-import { useState } from 'react';
-
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, FlatList, Dimensions, StatusBar } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
-const CollapsibleSection = ({ title, children }) => {
-  const [collapsed, setCollapsed] = useState(true);
+export default function InfoScreen() {
+  const [infoData, setInfoData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  return (
-    <View style={styles.collapsibleSection}>
-      <TouchableOpacity onPress={() => setCollapsed(!collapsed)}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>
-          {title} <Ionicons name={collapsed ? 'chevron-down' : 'chevron-up'} size={16} />
-        </ThemedText>
-      </TouchableOpacity>
-      {!collapsed && <View style={styles.collapsibleContent}>{children}</View>}
+  useEffect(() => {
+    const fetchInfoData = async () => {
+      try {
+        const response = await fetch('https://backpropagators.uc.r.appspot.com/allDisasters');
+        const data = await response.json();
+        console.log(data);
+        const parsedData = data.map((item, index) => ({
+          id: String(index + 1),
+          event: item.event,
+          description: item.description || item.speaker_summary,
+          impactedAreas: item.impacted_areas?.join(', '),
+          awareness: item.awareness,
+          speakerSummary: item.speaker_summary,
+        }));
+        setInfoData(parsedData);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchInfoData();
+  }, []);
+
+  const renderInfoItem = ({ item }) => (
+    <View style={styles.infoItem} key={item.id}>
+      <View style={styles.infoText}>
+        <ThemedText type="subtitle">{item.event}</ThemedText>
+        <ThemedText>{item.description}</ThemedText>
+        <ThemedText>Impacted Areas: {item.impactedAreas}</ThemedText>
+        <ThemedText>Awareness: {item.awareness}</ThemedText>
+        <ThemedText>Speaker Summary: {item.speakerSummary}</ThemedText>
+      </View>
     </View>
   );
-};
 
-export default function TabTwoScreen() {
   return (
-    <View style={styles.container}>
-      <ThemedText type="title" style={styles.mainHeader}>Know about what's happening.</ThemedText>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <CollapsibleSection title="Disaster">
-          <Text style={styles.bullet}>• Details about the disaster</Text>
-          <Text style={styles.bullet}>• More details</Text>
-        </CollapsibleSection>
-        <CollapsibleSection title="What is impacted">
-          <Text style={styles.bullet}>• Description of impacted areas</Text>
-          <Text style={styles.bullet}>• More impacted details</Text>
-        </CollapsibleSection>
-        <CollapsibleSection title="Ideas to overcome">
-          <Text style={styles.bullet}>• Suggested actions to take</Text>
-          <Text style={styles.bullet}>• Additional suggestions</Text>
-        </CollapsibleSection>
-      </ScrollView>
-    </View>
+    <FlatList
+      data={infoData}
+      renderItem={renderInfoItem}
+      keyExtractor={item => item.id}
+      contentContainerStyle={styles.flatListContent}
+      onEndReachedThreshold={0.5}
+      ListHeaderComponent={
+        <>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText type="title">Know about what's happening.</ThemedText>
+          </ThemedView>
+        </>
+      }
+      ListFooterComponent={
+        loading ? (
+          <View style={styles.loading}>
+            <ThemedText>Loading...</ThemedText>
+          </View>
+        ) : null
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  flatListContent: {
+    paddingTop: StatusBar.currentHeight + 20,
+    paddingBottom: 20,
     backgroundColor: '#f0f0f0', // Consistent background color
-    padding: 16,
-    paddingTop: StatusBar.currentHeight + 100, // Push down the content more
   },
-  mainHeader: {
-    textAlign: 'center',
-    marginBottom: 60, // Move down the main header
-    color: 'black', // Set the title color to black
-    fontSize: 32, // Match the font size of "What's up, Nate 👋"
-    fontWeight: 'bold', // Make the main header bold
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'flex-start', // Start from the top
+  titleContainer: {
+    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 40, // Move down the title text
+    backgroundColor: '#f0f0f0', // Background color matching the rest of the page
+    paddingVertical: 10,
   },
-  collapsibleSection: {
-    width: '100%',
-    marginBottom: 16,
-    padding: 16,
+  infoItem: {
+    padding: 15,
+    marginVertical: 10,
     backgroundColor: '#fff',
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
+    width: Dimensions.get('window').width - 40,
+    marginHorizontal: 20,
+    position: 'relative',
   },
-  sectionTitle: {
-    fontSize: 18,
-    marginBottom: 8,
-    fontWeight: 'bold',
-    color: '#333', // Darker color for section titles
+  infoText: {
+    flex: 1,
+    marginRight: 10,
   },
-  collapsibleContent: {
-    paddingLeft: 16,
-  },
-  bullet: {
-    fontSize: 16,
-    marginBottom: 4,
-    color: '#666', // Slightly darker gray for bullets
+  loading: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 });
