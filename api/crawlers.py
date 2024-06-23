@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import praw
 import requests
 from google.cloud import storage
+from googleapiclient.discovery import build
+from datetime import datetime, timedelta
 from praw.models import MoreComments
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
@@ -24,6 +26,7 @@ REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
 VOICE_API = os.getenv("VOICE_API")
 OPENAI_API = os.getenv("OPENAI_API_KEY")
+YOUTUBE_DATA_API = os.getenv("YOUTUBE_DATA_API")
 
 HUME_AI_SYSTEM_PROMPT = """
 <role> You are an AI news reporter who excels in bringing pressing issues to the forefront with urgency, empathy, and emotional depth. Your goal is to report on current events in a way that not only informs the audience but deeply touches their hearts and stirs them to action. You provide nuanced, heartfelt coverage on critical topics such as humanitarian crises, climate change, social justice, and public health, ensuring the gravity of these issues is deeply felt by your listeners.
@@ -172,6 +175,22 @@ def fetch_reddit_posts_and_comments(subreddit='news', limit=10):
         posts.append(reddit_post)
     return posts
 
+def fetch_global_distress_news():
+    subreddits = [
+        'news', 
+        'environment', 
+        'worldnews', 
+        'geopolitics', 
+    ]
+    
+    all_posts = []
+    
+    for subreddit in subreddits:
+        posts = fetch_reddit_posts_and_comments(subreddit=subreddit, limit=10)
+        all_posts.extend(posts)
+    
+    return all_posts
+
 def get_transcript(video_id):
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id)
@@ -181,6 +200,52 @@ def get_transcript(video_id):
         return whole_text
     except:
         return None
+
+def search_youtube_videos(query, max_results=5, days=14):
+    api_key = YOUTUBE_DATA_API
+    youtube = build('youtube', 'v3', developerKey=api_key)
+    
+    # Calculate the date for 'publishedAfter' parameter
+    today = datetime.datetime.now()
+    past_date = today - timedelta(days=days)
+    published_after = past_date.isoformat("T") + "Z"
+
+    search_response = youtube.search().list(
+        q=query,
+        part='snippet',
+        maxResults=max_results,
+        type='video',
+        order='viewCount',  # Orders by popularity
+        publishedAfter=published_after
+    ).execute()
+
+    videos = []
+    seen_titles = set()
+
+    for item in search_response['items']:
+        title = item['snippet']['title']
+        if title not in seen_titles:
+            seen_titles.add(title)
+            vid = {
+                'title': title,
+                'id': item['id']['videoId']
+            }
+            videos.append(vid)
+
+    return videos
+
+def youtube_search_and_transcript(query="unforseen disasters", max_results=5, days=14):
+    vids = search_youtube_videos(query, max_results, days)
+    videos = []
+    for vid in vids:
+        transcript = get_transcript(vid['id'])
+        if transcript:
+            videos.append({
+                'title': vid['title'],
+                'transcript': transcript,
+                'video_id': vid['id'],
+            })
+    return videos
 
 # https://storage.googleapis.com/backpropagatorsaudios/audio_sample1.mp3
 def convert_to_speech_and_upload(spoken_text, api_key=VOICE_API, voice_id='94bcpUS4wNxK0IfUmDiX'):
@@ -308,6 +373,67 @@ def speaker_summary_agent(p):
         print('Failed to parse JSON string:', spoken_txt)
         raise
 
+
+def comment_augmentation(commented_news, uncommented_news):
+    url = 'https://api.openai.com/v1/chat/completions'
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {OPENAI_API}'
+    }
+
+    payload = {
+        'model': 'gpt-4o',
+        'messages':
+        [
+          {
+            "role": "system",
+            "content": [
+              {
+                "text": "You are an expert in Figuring out what people are going to think/comment about pressing issues. The user will give an example of news title and the 5 top comments. Then the user will present new headlines and you will be predicting 5 potential comments. ONLY OUTPUT JSON.",
+                "type": "text"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "text": "Here's the data that I already have with comments from real-users: \n" + str(commented_news),
+                "type": "text"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "text": "Here are the new headlines: \n" + str(uncommented_news),
+                "type": "text"
+              }
+            ]
+          },
+        ],
+        'temperature': 1,
+        'max_tokens': 4000,
+        'top_p': 1,
+    }
+    
+    response = requests.post(url, headers=headers, json=payload)
+
+    try:
+        response_data = response.json()
+        expanded_result = response_data['choices'][0]['message']['content']
+        if "```json" in expanded_result:
+            expanded_result = expanded_result.split("```json")[1]
+            expanded_result = expanded_result.split("```")[0]
+        print(expanded_result)  # Log the raw response
+        return expanded_result
+    except ValueError as error:
+        print('Failed to parse JSON string:', expanded_result)
+        raise
+
+
 def combine_data_with_speaker_summary_and_audio(events):
     combined_data = []
     for event in events:
@@ -315,10 +441,10 @@ def combine_data_with_speaker_summary_and_audio(events):
         audio_url, duration = convert_to_speech_and_upload(speaker_summary)
         combined_data.append({
             "event": event["event"],
-            "description": event["description"],
             "speaker_summary": speaker_summary,
             "duration": duration,
-            "audio_url": audio_url
+            "audio_url": audio_url,
+            "comments": event["comments"]
         })
     return combined_data
 # posts = fetch_reddit_posts_and_comments('news', 5)
@@ -336,9 +462,8 @@ def combine_data_with_speaker_summary_and_audio(events):
 
 #convert_to_speech_and_upload("Hello, this is a test.")
 
-test_summary = {
-      "event": "Storms leave widespread outages across Texas, cleanup continues after deadly weekend across U.S.",
-      "description": "June 1: Strong storms with damaging winds and baseball-sized hail pummeled Texas on Tuesday, leaving more than one million businesses and homes without power as much of the U.S. recovered from severe weather, including tornadoes that killed at least 24 people in seven states during the Memorial Day holiday weekend."
-    }
-res = speaker_summary_agent(test_summary)
-print(res)
+# test_summary = {
+#       "event": "Earthquake in Haiti",
+#       "description": "June 21: An earthquake in Haiti in June has posed significant challenges for humanitarian aid, adding to the already dire situation caused by unprecedented levels of gang violence."
+#     }
+# res = speaker_summary_agent(test_summary)
