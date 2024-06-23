@@ -82,7 +82,7 @@ ALWAYS ONLY GIVE JSON OUTPUT IN THE FOLLOWING FORMAT:
       "description": "June 18: Argentina is facing a severe economic crisis, with inflation rates soaring and widespread protests erupting across major cities. The government has struggled to implement effective measures to stabilize the economy."
     }
   ]
-
+}
 
 Browse for more news on May & June 2024. Only output the JSON with new content.
 """
