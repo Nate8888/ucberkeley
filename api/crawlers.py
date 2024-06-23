@@ -17,24 +17,74 @@ REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
 
 reddit = praw.Reddit(client_id=REDDIT_CLIENT_ID, client_secret=REDDIT_CLIENT_SECRET, user_agent=REDDIT_USER_AGENT)
+
 retriever = YouRetriever()
+curr_month = datetime.datetime.now().strftime("%B")
+
 memory = ChatMemoryBuffer.from_defaults(token_limit=100000)
 llm = OpenAI(model="gpt-4o")
+
 youdotcom_chat = CondensePlusContextChatEngine.from_defaults(
     retriever=retriever,
     memory=memory,
     llm=llm,
 )
-curr_month = datetime.datetime.now().strftime("%B")
 
 def prompt_news_crawler():
-    NEWS_CRAWLER = """You're a top-tier reporter focused on SOLELY NEGATIVE news about the entire WORLD in June, 2024\n
+    NEWS_CRAWLER = """You're a top-tier reporter focused on SOLELY NEGATIVE news about the entire WORLD in May & June, 2024\n
 YOU SHOULD ALWAYS RESEARCH THE FOLLOWING QUERIES: \n
-1. Natural Disaster news and latest development\n
+
+1. Natural Disaster news and latest development like climate, weather, wildfires, etc.\n
 2. Unforseen Disasters in areas all over the world\n
 3. Big Changes in Regulation\n
+4. Local and ongoing Wars. \n
+5. Always include the location of the place. This can be the city, state, country, etc. \n
+6. ONLY INCLUDE NEWS FOR MAY & JUNE 2024. \n
+
 YOU SHOULD AVOID THE FOLLOWING QUERIES: \n
 1. Do not provide general facts of holidays. Solely focus on world news. \n
+2. DO NOT REPEAT ANY OF THE CURRENT EXISTING NEWS. \n
+
+ALWAYS ONLY GIVE JSON OUTPUT IN THE FOLLOWING FORMAT:
+
+{
+  "negative_news": [
+    {
+      "event": "Ongoing Brazil floods raise specter of climate migration",
+      "description": "MAY 20: With hundreds of thousands of families fleeing the floods, the disaster — which has killed at least 147 people — could touch off one of Brazil's biggest cases of climate migration."
+    },
+    {
+      "event": "Storms leave widespread outages across Texas, cleanup continues after deadly weekend across U.S.",
+      "description": "June 1: Strong storms with damaging winds and baseball-sized hail pummeled Texas on Tuesday, leaving more than one million businesses and homes without power as much of the U.S. recovered from severe weather, including tornadoes that killed at least 24 people in seven states during the Memorial Day holiday weekend."
+    },
+    {
+      "event": "Monsoon Season in Pakistan",
+      "description": "June 13: Almost 200 people, nearly half of them children, were killed in rain-related incidents during the monsoon season which began in late June. This year's rains have exacerbated the challenging situation following the mega floods of 2022."
+    },
+    {
+      "event": "Earthquake in Haiti",
+      "description": "June 21: An earthquake in Haiti in June has posed significant challenges for humanitarian aid, adding to the already dire situation caused by unprecedented levels of gang violence."
+    },
+    {
+      "event": "Wildfires in Australia",
+      "description": "May 15: Severe wildfires have ravaged parts of New South Wales, Australia, destroying hundreds of homes and forcing thousands to evacuate. The fires have been attributed to prolonged drought and extreme heat conditions."
+    },
+    {
+      "event": "Civil unrest in Sudan",
+      "description": "June 5: Ongoing civil unrest in Sudan has led to significant casualties and displacement. The conflict, primarily in the Darfur region, has intensified, with reports of widespread violence and human rights abuses."
+    },
+    {
+      "event": "Flooding in Germany",
+      "description": "May 28: Heavy rains have caused severe flooding in parts of Germany, particularly in the states of Bavaria and Saxony. The floods have resulted in significant property damage and have displaced thousands of residents."
+    },
+    {
+      "event": "Economic crisis in Argentina",
+      "description": "June 18: Argentina is facing a severe economic crisis, with inflation rates soaring and widespread protests erupting across major cities. The government has struggled to implement effective measures to stabilize the economy."
+    }
+  ]
+
+
+Browse for more news on May & June 2024. Only output the JSON with new content.
 """
     response = youdotcom_chat.chat(NEWS_CRAWLER)
     print(response)
@@ -83,4 +133,4 @@ def get_transcript(video_id):
 #     print(get_transcript(video_id))
 #     print("--------------------------------------------------")
 
-prompt_news_crawler()
+# prompt_news_crawler()
