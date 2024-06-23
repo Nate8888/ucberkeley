@@ -9,6 +9,7 @@ from llama_index.core import PromptTemplate
 from llama_index.llms.openai import OpenAI
 from llama_index.retrievers.you import YouRetriever
 import datetime
+import json
 
 # load_env()
 load_dotenv()
@@ -16,42 +17,12 @@ REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
 
-reddit = praw.Reddit(client_id=REDDIT_CLIENT_ID, client_secret=REDDIT_CLIENT_SECRET, user_agent=REDDIT_USER_AGENT)
-
-retriever = YouRetriever()
-curr_month = datetime.datetime.now().strftime("%B")
-
-memory = ChatMemoryBuffer.from_defaults(token_limit=100000)
-llm = OpenAI(model="gpt-4o")
-
-youdotcom_chat = CondensePlusContextChatEngine.from_defaults(
-    retriever=retriever,
-    memory=memory,
-    llm=llm,
-)
-
-def prompt_news_crawler():
-    NEWS_CRAWLER = """You're a top-tier reporter focused on SOLELY NEGATIVE news about the entire WORLD in May & June, 2024\n
-YOU SHOULD ALWAYS RESEARCH THE FOLLOWING QUERIES: \n
-
-1. Natural Disaster news and latest development like climate, weather, wildfires, etc.\n
-2. Unforseen Disasters in areas all over the world\n
-3. Big Changes in Regulation\n
-4. Local and ongoing Wars. \n
-5. Always include the location of the place. This can be the city, state, country, etc. \n
-6. ONLY INCLUDE NEWS FOR MAY & JUNE 2024. \n
-
-YOU SHOULD AVOID THE FOLLOWING QUERIES: \n
-1. Do not provide general facts of holidays. Solely focus on world news. \n
-2. DO NOT REPEAT ANY OF THE CURRENT EXISTING NEWS. \n
-
-ALWAYS ONLY GIVE JSON OUTPUT IN THE FOLLOWING FORMAT:
-
-{
+# JSON structure to Base & then RAG on with a memory cache
+current_news = {
   "negative_news": [
     {
       "event": "Ongoing Brazil floods raise specter of climate migration",
-      "description": "MAY 20: With hundreds of thousands of families fleeing the floods, the disaster — which has killed at least 147 people — could touch off one of Brazil's biggest cases of climate migration."
+      "description": "May 20: With hundreds of thousands of families fleeing the floods, the disaster — which has killed at least 147 people — could touch off one of Brazil's biggest cases of climate migration."
     },
     {
       "event": "Storms leave widespread outages across Texas, cleanup continues after deadly weekend across U.S.",
@@ -69,26 +40,52 @@ ALWAYS ONLY GIVE JSON OUTPUT IN THE FOLLOWING FORMAT:
       "event": "Wildfires in Australia",
       "description": "May 15: Severe wildfires have ravaged parts of New South Wales, Australia, destroying hundreds of homes and forcing thousands to evacuate. The fires have been attributed to prolonged drought and extreme heat conditions."
     },
-    {
-      "event": "Civil unrest in Sudan",
-      "description": "June 5: Ongoing civil unrest in Sudan has led to significant casualties and displacement. The conflict, primarily in the Darfur region, has intensified, with reports of widespread violence and human rights abuses."
-    },
-    {
-      "event": "Flooding in Germany",
-      "description": "May 28: Heavy rains have caused severe flooding in parts of Germany, particularly in the states of Bavaria and Saxony. The floods have resulted in significant property damage and have displaced thousands of residents."
-    },
-    {
-      "event": "Economic crisis in Argentina",
-      "description": "June 18: Argentina is facing a severe economic crisis, with inflation rates soaring and widespread protests erupting across major cities. The government has struggled to implement effective measures to stabilize the economy."
-    }
   ]
 }
 
+reddit = praw.Reddit(client_id=REDDIT_CLIENT_ID, client_secret=REDDIT_CLIENT_SECRET, user_agent=REDDIT_USER_AGENT)
+
+retriever = YouRetriever()
+curr_month = datetime.datetime.now().strftime("%B")
+
+memory = ChatMemoryBuffer.from_defaults(token_limit=100000)
+llm = OpenAI(model="gpt-4o")
+
+youdotcom_chat = CondensePlusContextChatEngine.from_defaults(
+    retriever=retriever,
+    memory=memory,
+    llm=llm,
+)
+
+def prompt_news_crawler(amount_of_retrievals=5):
+    NEWS_CRAWLER = """You're a top-tier reporter focused on SOLELY NEGATIVE news about the entire WORLD in May & June, 2024\n
+YOU SHOULD ALWAYS RESEARCH THE FOLLOWING QUERIES: \n
+
+1. Natural Disaster news and latest development like climate, weather, wildfires, etc.\n
+2. Unforseen Disasters in areas all over the world\n
+3. Big Changes in Regulation\n
+4. Local and ongoing Wars. \n
+5. Always include the location of the place. This can be the city, state, country, etc. \n
+6. ONLY INCLUDE NEWS FOR MAY & JUNE 2024. \n
+
+YOU SHOULD AVOID THE FOLLOWING QUERIES: \n
+1. Do not provide general facts of holidays. Solely focus on world news. \n
+2. DO NOT REPEAT ANY OF THE CURRENT EXISTING NEWS. \n
+
+ALWAYS ONLY GIVE JSON OUTPUT IN THE FOLLOWING FORMAT:
+
+""" + str(current_news) + """
+
 Browse for more news on May & June 2024. Only output the JSON with new content.
 """
-    response = youdotcom_chat.chat(NEWS_CRAWLER)
-    print(response)
-    return response
+    response = str(youdotcom_chat.chat(NEWS_CRAWLER))
+    response_dict = response.split("```json")[1]
+    response_dict = response_dict.split("```")[0]
+    new_news = json.loads(response_dict)
+    current_news["negative_news"].extend(new_news["negative_news"])
+    if amount_of_retrievals > 1:
+      return prompt_news_crawler(amount_of_retrievals - 1)
+    return current_news
 
 def fetch_reddit_posts_and_comments(subreddit='news', limit=10):
     posts = []
