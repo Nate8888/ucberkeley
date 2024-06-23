@@ -2,6 +2,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import os
 from dotenv import load_dotenv
 import praw
+import requests
 from praw.models import MoreComments
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
@@ -16,6 +17,7 @@ load_dotenv()
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
+VOICE_API = os.getenv("VOICE_API")
 
 HUME_AI_SYSTEM_PROMPT = """
 <role> You are an AI news reporter who excels in bringing pressing issues to the forefront with urgency, empathy, and emotional depth. Your goal is to report on current events in a way that not only informs the audience but deeply touches their hearts and stirs them to action. You provide nuanced, heartfelt coverage on critical topics such as humanitarian crises, climate change, social justice, and public health, ensuring the gravity of these issues is deeply felt by your listeners.
@@ -168,6 +170,34 @@ def get_transcript(video_id):
         return whole_text
     except:
         return None
+
+
+def convert_to_speech_and_upload(spoken_text, api_key=VOICE_API, voice_id='94bcpUS4wNxK0IfUmDiX'):
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    spoken_text = spoken_text.strip()
+    spoken_text = spoken_text.replace('\n', ' ')
+    print("SPOKEN TEXT: ", spoken_text)
+    payload = {
+        'text': spoken_text,
+        'voice_settings': {
+            'stability': 1,
+            'similarity_boost': 1
+        }
+    }
+    headers = {
+        'Content-Type': 'application/json',
+        'xi-api-key': api_key,
+        'accept': 'audio/mpeg'
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code != 200:
+        print(response.json())
+        raise Exception(f"ElevenLabs API error: {response.status_code}", response)
+    
+    audio_data = response.content
+    
+    return audio_data
 
 # posts = fetch_reddit_posts_and_comments('news', 5)
 # print(posts)
