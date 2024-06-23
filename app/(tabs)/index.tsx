@@ -6,11 +6,11 @@ import { ThemedView } from '@/components/ThemedView';
 import { Audio } from 'expo-av';
 
 const initialNewsData = [
-  { id: '1', headline: 'News Headline 1', description: 'Short description of the news article 1...', severity: '10/10', exposure: '5/10' },
-  { id: '2', headline: 'News Headline 2', description: 'Short description of the news article 2...', severity: '8/10', exposure: '6/10' },
-  { id: '3', headline: 'News Headline 3', description: 'Short description of the news article 3...', severity: '7/10', exposure: '4/10' },
-  { id: '4', headline: 'News Headline 4', description: 'Short description of the news article 4...', severity: '9/10', exposure: '3/10' },
-  { id: '5', headline: 'News Headline 5', description: 'Short description of the news article 5...', severity: '6/10', exposure: '7/10' },
+  { id: '1', headline: 'News Headline 1', description: 'Short description of the news article 1...', severity: '10/10', exposure: '5/10', audio_url: 'https://example.com/audio1.mp3' },
+  { id: '2', headline: 'News Headline 2', description: 'Short description of the news article 2...', severity: '8/10', exposure: '6/10', audio_url: 'https://example.com/audio2.mp3' },
+  { id: '3', headline: 'News Headline 3', description: 'Short description of the news article 3...', severity: '7/10', exposure: '4/10', audio_url: 'https://example.com/audio3.mp3' },
+  { id: '4', headline: 'News Headline 4', description: 'Short description of the news article 4...', severity: '9/10', exposure: '3/10', audio_url: 'https://example.com/audio4.mp3' },
+  { id: '5', headline: 'News Headline 5', description: 'Short description of the news article 5...', severity: '6/10', exposure: '7/10', audio_url: 'https://example.com/audio5.mp3' },
 ];
 
 export default function HomeScreen() {
@@ -24,7 +24,6 @@ export default function HomeScreen() {
         const response = await fetch('https://backpropagators.uc.r.appspot.com/allDisasters');
         const data = await response.json();
         console.log(data);
-        // "impact":{"economic_impact":6,"environmental_impact":7,"health_impact":6,"human_impact":7,"infrastructure_impact":6,"social_impact":6}
         const parsedData = data.map((item, index) => ({
           id: String(index + 1),
           headline: item.event,  // Adjust according to actual data structure
@@ -45,32 +44,27 @@ export default function HomeScreen() {
     if (loading) return;
 
     setLoading(true);
-    // setTimeout(() => {
-    //   const moreNews = [
-    //     {
-    //       id: String(newsData.length + 1),
-    //       headline: `News Headline ${newsData.length + 1}`,
-    //       description: `Short description of the news article ${newsData.length + 1}...`,
-    //       severity: 'Placeholder',
-    //       exposure: 'Placeholder',
-    //     },
-    //     {
-    //       id: String(newsData.length + 2),
-    //       headline: `News Headline ${newsData.length + 2}`,
-    //       description: `Short description of the news article ${newsData.length + 2}...`,
-    //       severity: 'Placeholder',
-    //       exposure: 'Placeholder',
-    //     },
-    //   ];
-    //   setNewsData([...newsData, ...moreNews]);
-    //   setLoading(false);
-    // }, 1500);
   };
 
   const playSound = async (url) => {
-    const { sound } = await Audio.Sound.createAsync({ uri: url });
-    setSound(sound);
-    await sound.playAsync();
+    if (sound) {
+      await sound.unloadAsync();
+    }
+    const { sound: newSound } = await Audio.Sound.createAsync({ uri: url });
+    setSound(newSound);
+    await newSound.playAsync();
+  };
+
+  const pauseSound = async () => {
+    if (sound) {
+      await sound.pauseAsync();
+    }
+  };
+
+  const stopSound = async () => {
+    if (sound) {
+      await sound.stopAsync();
+    }
   };
 
   useEffect(() => {
@@ -83,9 +77,6 @@ export default function HomeScreen() {
 
   const renderNewsItem = ({ item }) => (
     <View style={styles.newsItem} key={item.id}>
-      <TouchableOpacity onPress={() => playSound(item.audio_url)}>
-        <Ionicons name="mic-outline" size={24} color="black" style={styles.speakerIcon} />
-      </TouchableOpacity>
       <View style={styles.newsText}>
         <ThemedText type="subtitle">{item.headline}</ThemedText>
         <ThemedText>{item.description}</ThemedText>
@@ -94,6 +85,17 @@ export default function HomeScreen() {
           <ThemedText style={styles.smallText}>Exposure: <Text style={styles.scoreValue}>{item.exposure}</Text></ThemedText>
         </View>
         <ThemedText style={styles.readMoreText}>See full details...</ThemedText>
+      </View>
+      <View style={styles.iconContainer}>
+        <TouchableOpacity onPress={() => playSound(item.audio_url)}>
+          <Ionicons name="mic-outline" size={24} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={pauseSound}>
+          <Ionicons name="pause-outline" size={24} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={stopSound}>
+          <Ionicons name="stop-outline" size={24} color="black" />
+        </TouchableOpacity>
       </View>
       <Ionicons name="arrow-forward-outline" size={24} color="black" />
     </View>
@@ -143,6 +145,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: 'center',
     marginVertical: 10,
+    marginTop: 40,
   },
   newsItem: {
     flexDirection: 'row',
@@ -182,10 +185,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'right',
   },
-  speakerIcon: {
+  iconContainer: {
     position: 'absolute',
     top: 10,
     right: 10,
+    flexDirection: 'row',
+    gap: 5,
   },
   loading: {
     paddingVertical: 20,
