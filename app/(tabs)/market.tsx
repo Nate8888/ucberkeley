@@ -1,106 +1,130 @@
-import { useState } from 'react';
-import { StyleSheet, Platform, View, StatusBar, Dimensions, TouchableOpacity, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, FlatList, Dimensions, StatusBar, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-const CollapsibleBox = ({ title, children }) => {
-  const [collapsed, setCollapsed] = useState(true);
+export default function MarketScreen() {
+  const [marketData, setMarketData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [expandedItems, setExpandedItems] = useState({});
 
-  return (
-    <View style={styles.box}>
-      <TouchableOpacity onPress={() => setCollapsed(!collapsed)}>
-        <ThemedText type="subtitle" style={styles.boxTitle}>
-          {title} <Ionicons name={collapsed ? 'chevron-down' : 'chevron-up'} size={16} />
-        </ThemedText>
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      try {
+        const response = await fetch('https://backpropagators.uc.r.appspot.com/allMarketOpps');
+        const data = await response.json();
+        console.log(data);
+        const parsedData = data.map((item, index) => ({
+          id: String(index + 1),
+          name: item.name,  // Adjust according to actual data structure
+          opportunity: item.underlying_asset,
+          potentialImpact: Array.isArray(item.impacted_markets) ? item.impacted_markets.join(', ') : item.impacted_markets,
+          why: item.why,  // Assuming there is a "why" field in the data
+        }));
+        setMarketData(parsedData);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchMarketData();
+  }, []);
+
+  const toggleExpand = (id) => {
+    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const renderMarketItem = ({ item }) => (
+    <View style={styles.marketItem} key={item.id}>
+      <View style={styles.marketText}>
+        <ThemedText type="subtitle" style={styles.boldText}>Opportunity:</ThemedText>
+        <ThemedText style={styles.textSpacing}>{item.opportunity}</ThemedText>
+        <ThemedText type="subtitle" style={styles.boldText}>Potential Impact:</ThemedText>
+        <ThemedText style={styles.textSpacing}>{item.potentialImpact}</ThemedText>
+        {expandedItems[item.id] && (
+          <>
+            <ThemedText type="subtitle" style={styles.boldText}>Why:</ThemedText>
+            <ThemedText style={styles.textSpacing}>{item.why}</ThemedText>
+          </>
+        )}
+      </View>
+      <TouchableOpacity onPress={() => toggleExpand(item.id)}>
+        <Ionicons name="arrow-forward-outline" size={24} color="black" />
       </TouchableOpacity>
-      {!collapsed && <View style={styles.collapsibleContent}>{children}</View>}
     </View>
   );
-};
 
-export default function TabTwoScreen() {
   return (
-    <SafeAreaView style={styles.container}>
-      <ThemedText type="title" style={styles.mainTitle}>Object</ThemedText>
-      <View style={styles.boxContainer}>
-        <View style={styles.row}>
-          <CollapsibleBox title="Disaster Event">
-            <Text style={styles.bullet}>• Details about the disaster</Text>
-            <Text style={styles.bullet}>• More details</Text>
-          </CollapsibleBox>
-          <CollapsibleBox title="Markets Impacted">
-            <Text style={styles.bullet}>• Market 1</Text>
-            <Text style={styles.bullet}>• Market 2</Text>
-          </CollapsibleBox>
-        </View>
-        <View style={styles.row}>
-          <CollapsibleBox title="Potential Companies Impacted">
-            <Text style={styles.bullet}>• Company 1</Text>
-            <Text style={styles.bullet}>• Company 2</Text>
-            <Text style={styles.bullet}>• Company 2</Text>
-            <Text style={styles.bullet}>• Company 2</Text>
-            <Text style={styles.bullet}>• Company 2</Text>
-            <Text style={styles.bullet}>• Company 2</Text>
-
-
-          </CollapsibleBox>
-          <CollapsibleBox title="Suggested Actions">
-            <Text style={styles.bullet}>• Action 1</Text>
-            <Text style={styles.bullet}>• Action 2</Text>
-          </CollapsibleBox>
-        </View>
-      </View>
-    </SafeAreaView>
+    <FlatList
+      data={marketData}
+      renderItem={renderMarketItem}
+      keyExtractor={item => item.id}
+      contentContainerStyle={styles.flatListContent}
+      onEndReachedThreshold={0.5}
+      ListHeaderComponent={
+        <>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText type="title">Market Opportunities</ThemedText>
+          </ThemedView>
+          <ThemedText style={styles.subtitle}>Explore potential market opportunities.</ThemedText>
+        </>
+      }
+      ListFooterComponent={
+        loading ? (
+          <View style={styles.loading}>
+            <ThemedText>Loading...</ThemedText>
+          </View>
+        ) : null
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#d0d0d0', // Consistent background color
-    padding: 16,
-    paddingTop: 100, // Push down the content
+  flatListContent: {
+    paddingTop: StatusBar.currentHeight + 20,
+    paddingBottom: 20,
+    backgroundColor: '#f0f0f0', // Consistent background color
   },
-  mainTitle: {
-    textAlign: 'center',
-    //marginBottom: 30, // Increased margin to ensure visibility
-    color: 'black', // Set the title color to black
-    fontSize: 32, // Match the font size of "What's up, Nate 👋"
-    fontWeight: 'bold', // Make the main header bold
-  },
-  boxContainer: {
-    flex: 1,
+  titleContainer: {
     justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40, // Move down the title text
+    backgroundColor: '#f0f0f0', // Background color matching the rest of the page
+    paddingVertical: 10,
   },
-  row: {
+  subtitle: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginVertical: 10,
+  },
+  marketItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  box: {
-    backgroundColor: '#ffffff',
-    width: (Dimensions.get('window').width / 2) - 24, // Adjust width to be half of the screen minus margins
-    height: (Dimensions.get('window').width / 2) - 24, // Make height equal to width for square shape
-    padding: 16,
+    alignItems: 'center',
+    padding: 15,
+    marginVertical: 10,
+    backgroundColor: '#fff',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
-    justifyContent: 'center',
+    width: Dimensions.get('window').width - 40,
+    marginHorizontal: 20,
+    position: 'relative',
+  },
+  marketText: {
+    flex: 1,
+    marginRight: 10,
+  },
+  boldText: {
+    fontWeight: 'bold',
+  },
+  textSpacing: {
+    marginBottom: 10,
+  },
+  loading: {
+    paddingVertical: 20,
     alignItems: 'center',
-  },
-  boxTitle: {
-    textAlign: 'center',
-  },
-  collapsibleContent: {
-    paddingTop: 10,
-  },
-  bullet: {
-    fontSize: 16,
-    marginBottom: 4,
-    color: '#666', // Slightly darker gray for bullets
   },
 });
