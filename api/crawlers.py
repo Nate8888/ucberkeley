@@ -23,6 +23,7 @@ REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
 VOICE_API = os.getenv("VOICE_API")
+OPENAI_API = os.getenv("OPENAI_API_KEY")
 
 HUME_AI_SYSTEM_PROMPT = """
 <role> You are an AI news reporter who excels in bringing pressing issues to the forefront with urgency, empathy, and emotional depth. Your goal is to report on current events in a way that not only informs the audience but deeply touches their hearts and stirs them to action. You provide nuanced, heartfelt coverage on critical topics such as humanitarian crises, climate change, social justice, and public health, ensuring the gravity of these issues is deeply felt by your listeners.
@@ -224,6 +225,89 @@ def convert_to_speech_and_upload(spoken_text, api_key=VOICE_API, voice_id='94bcp
     print(f"THIS AUDIO {audio_url} DURATION IS: {duration}")
     return audio_url, duration
 
+def speaker_summary_agent(p):
+    url = 'https://api.openai.com/v1/chat/completions'
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {OPENAI_API}'
+    }
+
+    payload = {
+        'model': 'gpt-4o',
+        'messages':
+        [
+          {
+            "role": "system",
+            "content": [
+              {
+                "text": "You are an expert in building short and concise summaries of news/global distress situations for text-to-speech for a reporter. You provide a very brief overview of the situation, and then mention the main point impacted.",
+                "type": "text"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "text": "    {\r\n      \"event\": \"Storms leave widespread outages across Texas, cleanup continues after deadly weekend across U.S.\",\r\n      \"description\": \"June 1: Strong storms with damaging winds and baseball-sized hail pummeled Texas on Tuesday, leaving more than one million businesses and homes without power as much of the U.S. recovered from severe weather, including tornadoes that killed at least 24 people in seven states during the Memorial Day holiday weekend.\"\r\n    }",
+                "type": "text"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "Severe storms with damaging winds and baseball-sized hail hit Texas, causing over a million power outages. Cleanup efforts continue across the U.S. after tornadoes killed at least 24 people in seven states during the Memorial Day weekend.",
+                "type": "text"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "text": "    {\r\n      \"event\": \"China launches Sino-French astrophysics satellite, debris falls over populated area\",\r\n      \"description\": \"June 22: A Chinese launch of the joint Sino-French SVOM mission to study Gamma-ray bursts early Saturday saw toxic rocket debris fall over a populated area. A Long March 2C rocket lifted off from Xichang Satellite Launch Center at 3:00 a.m. Eastern (0700 UTC) June 22, sending the Space Variable Objects Monitor (SVOM) mission satellite into orbit. .\"\r\n    }",
+                "type": "text"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "China launched the Sino-French SVOM satellite to study Gamma-ray bursts, but toxic rocket debris fell over a populated area. The Long March 2C rocket lifted off from Xichang Satellite Launch Center early Saturday.",
+                "type": "text"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "text": f"{p}",
+                "type": "text"
+              }
+            ]
+          }
+        ],
+        'temperature': 1,
+        'max_tokens': 400,
+        'top_p': 1,
+    }
+    
+    response = requests.post(url, headers=headers, json=payload)
+
+    try:
+        response_data = response.json()
+        spoken_txt = response_data['choices'][0]['message']['content']
+        print(spoken_txt)  # Log the raw response
+        return spoken_txt
+    except ValueError as error:
+        print('Failed to parse JSON string:', spoken_txt)
+        raise
+
 # posts = fetch_reddit_posts_and_comments('news', 5)
 # print(posts)
 
@@ -237,4 +321,11 @@ def convert_to_speech_and_upload(spoken_text, api_key=VOICE_API, voice_id='94bcp
 
 # prompt_news_crawler()
 
-convert_to_speech_and_upload("Hello, this is a test.")
+#convert_to_speech_and_upload("Hello, this is a test.")
+
+test_summary = {
+      "event": "Storms leave widespread outages across Texas, cleanup continues after deadly weekend across U.S.",
+      "description": "June 1: Strong storms with damaging winds and baseball-sized hail pummeled Texas on Tuesday, leaving more than one million businesses and homes without power as much of the U.S. recovered from severe weather, including tornadoes that killed at least 24 people in seven states during the Memorial Day holiday weekend."
+    }
+res = speaker_summary_agent(test_summary)
+print(res)
