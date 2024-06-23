@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 5,
+    marginBottom: 100,
   },
   calloutText: {
     fontSize: 14,
