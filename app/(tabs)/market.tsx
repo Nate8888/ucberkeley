@@ -3,6 +3,7 @@ import { StyleSheet, Platform, View, StatusBar, Dimensions, TouchableOpacity, Te
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CollapsibleBox = ({ title, children }) => {
   const [collapsed, setCollapsed] = useState(true);
@@ -21,10 +22,8 @@ const CollapsibleBox = ({ title, children }) => {
 
 export default function TabTwoScreen() {
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <ThemedText type="title" style={styles.mainTitle}>Object</ThemedText>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <ThemedText type="title" style={styles.mainTitle}>Object</ThemedText>
       <View style={styles.boxContainer}>
         <View style={styles.row}>
           <CollapsibleBox title="Disaster Event">
@@ -40,6 +39,12 @@ export default function TabTwoScreen() {
           <CollapsibleBox title="Potential Companies Impacted">
             <Text style={styles.bullet}>• Company 1</Text>
             <Text style={styles.bullet}>• Company 2</Text>
+            <Text style={styles.bullet}>• Company 2</Text>
+            <Text style={styles.bullet}>• Company 2</Text>
+            <Text style={styles.bullet}>• Company 2</Text>
+            <Text style={styles.bullet}>• Company 2</Text>
+
+
           </CollapsibleBox>
           <CollapsibleBox title="Suggested Actions">
             <Text style={styles.bullet}>• Action 1</Text>
@@ -47,7 +52,7 @@ export default function TabTwoScreen() {
           </CollapsibleBox>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -56,14 +61,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#d0d0d0', // Consistent background color
     padding: 16,
-    paddingTop: StatusBar.currentHeight + 20, // Push down the content
-  },
-  headerContainer: {
-    marginBottom: 20, // Adjust margin to move the title down
+    paddingTop: 100, // Push down the content
   },
   mainTitle: {
     textAlign: 'center',
-    marginBottom: 20, // Increased margin to ensure visibility
+    //marginBottom: 30, // Increased margin to ensure visibility
     color: 'black', // Set the title color to black
     fontSize: 32, // Match the font size of "What's up, Nate 👋"
     fontWeight: 'bold', // Make the main header bold
