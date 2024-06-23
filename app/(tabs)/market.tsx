@@ -20,7 +20,10 @@ export default function MarketScreen() {
           name: item.name,  // Adjust according to actual data structure
           opportunity: item.underlying_asset,
           potentialImpact: Array.isArray(item.impacted_markets) ? item.impacted_markets.join(', ') : item.impacted_markets,
-          why: item.why,  // Assuming there is a "why" field in the data
+          why: Array.isArray(item.why) ? item.why.join(', ') : item.why, // Assuming there is a "why" field in the data
+          main_companies_impacted: Array.isArray(item.main_companies_impacted) ? item.main_companies_impacted.join(', ') : item.main_companies_impacted,
+          potential_actions: Array.isArray(item.potential_actions) ? item.potential_actions.join(', ') : item.potential_actions
+
         }));
         setMarketData(parsedData);
       } catch (error) {
@@ -39,12 +42,17 @@ export default function MarketScreen() {
       <View style={styles.marketText}>
         <ThemedText type="subtitle" style={styles.boldText}>Opportunity:</ThemedText>
         <ThemedText style={styles.textSpacing}>{item.opportunity}</ThemedText>
-        <ThemedText type="subtitle" style={styles.boldText}>Potential Impact:</ThemedText>
-        <ThemedText style={styles.textSpacing}>{item.potentialImpact}</ThemedText>
+        <ThemedText type="subtitle" style={styles.boldText}>Why:</ThemedText>
+        <ThemedText style={styles.textSpacing}>{item.why}</ThemedText>
         {expandedItems[item.id] && (
           <>
-            <ThemedText type="subtitle" style={styles.boldText}>Why:</ThemedText>
-            <ThemedText style={styles.textSpacing}>{item.why}</ThemedText>
+            <ThemedText type="subtitle" style={styles.boldText}>Industries of Impact</ThemedText>
+            <ThemedText style={styles.textSpacing}>{item.potentialImpact}</ThemedText>
+            <ThemedText type="subtitle" style={styles.boldText}>Potential Impact:</ThemedText>
+            <ThemedText style={styles.textSpacing}>{item.main_companies_impacted}</ThemedText>
+            <ThemedText type="subtitle" style={styles.boldText}>Potential Actions:</ThemedText>
+            <ThemedText style={styles.textSpacing}>{item.potential_actions}</ThemedText>
+            
           </>
         )}
       </View>
