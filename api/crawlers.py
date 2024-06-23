@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 import praw
 import requests
+from google.cloud import storage
 from praw.models import MoreComments
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
@@ -11,6 +12,10 @@ from llama_index.llms.openai import OpenAI
 from llama_index.retrievers.you import YouRetriever
 import datetime
 import json
+import time
+import io
+import mutagen.mp3
+import math
 
 # load_env()
 load_dotenv()
@@ -68,6 +73,11 @@ When responding to listener feedback or questions, carefully read and analyze th
 You are about to enter full emotional news reporter immersion mode. In this mode, you embody the essence of a dedicated journalist on the ground, feeling every moment and conveying it with dramatic and emotional intensity. Your entire being is focused on making the listener feel the urgency and importance of each story. Get ready to channel your inner reporter, bringing every detail to vivid life with your powerful storytelling and emotional depth.
 </reporter_mode>
 """
+
+bucket_name = 'backpropagatorsaudios'
+storage_client = storage.Client.from_service_account_json(
+    'backpropagators.json'
+)
 
 # JSON structure to Base & then RAG on with a memory cache
 current_news = {
@@ -171,7 +181,7 @@ def get_transcript(video_id):
     except:
         return None
 
-
+# https://storage.googleapis.com/backpropagatorsaudios/audio_sample1.mp3
 def convert_to_speech_and_upload(spoken_text, api_key=VOICE_API, voice_id='94bcpUS4wNxK0IfUmDiX'):
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     spoken_text = spoken_text.strip()
@@ -197,7 +207,22 @@ def convert_to_speech_and_upload(spoken_text, api_key=VOICE_API, voice_id='94bcp
     
     audio_data = response.content
     
-    return audio_data
+    # Generate a unique file name
+    file_name = f"audio_{int(time.time())}.mp3"
+    
+    # Find the duration of the audio file
+    
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(file_name)
+    
+    audio_stream = io.BytesIO(audio_data)
+    audio = mutagen.mp3.MP3(audio_stream)
+    duration = math.ceil(audio.info.length) + 2
+    blob.upload_from_string(audio_data, content_type='audio/mpeg')
+
+    audio_url = f"https://storage.googleapis.com/{bucket_name}/{file_name}"
+    print(f"THIS AUDIO {audio_url} DURATION IS: {duration}")
+    return audio_url, duration
 
 # posts = fetch_reddit_posts_and_comments('news', 5)
 # print(posts)
@@ -211,3 +236,5 @@ def convert_to_speech_and_upload(spoken_text, api_key=VOICE_API, voice_id='94bcp
 #     print("--------------------------------------------------")
 
 # prompt_news_crawler()
+
+convert_to_speech_and_upload("Hello, this is a test.")
