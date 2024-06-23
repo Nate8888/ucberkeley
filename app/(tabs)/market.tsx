@@ -1,27 +1,50 @@
-import { StyleSheet, Platform, View, StatusBar, Dimensions } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Platform, View, StatusBar, Dimensions, TouchableOpacity, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+
+const CollapsibleBox = ({ title, children }) => {
+  const [collapsed, setCollapsed] = useState(true);
+
+  return (
+    <View style={styles.box}>
+      <TouchableOpacity onPress={() => setCollapsed(!collapsed)}>
+        <ThemedText type="subtitle" style={styles.boxTitle}>
+          {title} <Ionicons name={collapsed ? 'chevron-down' : 'chevron-up'} size={16} />
+        </ThemedText>
+      </TouchableOpacity>
+      {!collapsed && <View style={styles.collapsibleContent}>{children}</View>}
+    </View>
+  );
+};
 
 export default function TabTwoScreen() {
   return (
     <View style={styles.container}>
-      <ThemedText type="title" style={styles.mainTitle}>Object</ThemedText>
+      <View style={styles.headerContainer}>
+        <ThemedText type="title" style={styles.mainTitle}>Object</ThemedText>
+      </View>
       <View style={styles.boxContainer}>
         <View style={styles.row}>
-          <View style={styles.box}>
-            <ThemedText type="subtitle" style={styles.boxTitle}>Disaster Event</ThemedText>
-          </View>
-          <View style={styles.box}>
-            <ThemedText type="subtitle" style={styles.boxTitle}>Markets Impacted</ThemedText>
-          </View>
+          <CollapsibleBox title="Disaster Event">
+            <Text style={styles.bullet}>• Details about the disaster</Text>
+            <Text style={styles.bullet}>• More details</Text>
+          </CollapsibleBox>
+          <CollapsibleBox title="Markets Impacted">
+            <Text style={styles.bullet}>• Market 1</Text>
+            <Text style={styles.bullet}>• Market 2</Text>
+          </CollapsibleBox>
         </View>
         <View style={styles.row}>
-          <View style={styles.box}>
-            <ThemedText type="subtitle" style={styles.boxTitle}>Potential Companies Impacted</ThemedText>
-          </View>
-          <View style={styles.box}>
-            <ThemedText type="subtitle" style={styles.boxTitle}>Suggested Actions</ThemedText>
-          </View>
+          <CollapsibleBox title="Potential Companies Impacted">
+            <Text style={styles.bullet}>• Company 1</Text>
+            <Text style={styles.bullet}>• Company 2</Text>
+          </CollapsibleBox>
+          <CollapsibleBox title="Suggested Actions">
+            <Text style={styles.bullet}>• Action 1</Text>
+            <Text style={styles.bullet}>• Action 2</Text>
+          </CollapsibleBox>
         </View>
       </View>
     </View>
@@ -35,11 +58,15 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: StatusBar.currentHeight + 20, // Push down the content
   },
+  headerContainer: {
+    marginBottom: 20, // Adjust margin to move the title down
+  },
   mainTitle: {
     textAlign: 'center',
-    marginBottom: 30, // Increased margin to ensure visibility
-    backgroundColor: '#d0d0d0', // Ensure background color consistency
+    marginBottom: 20, // Increased margin to ensure visibility
     color: 'black', // Set the title color to black
+    fontSize: 32, // Match the font size of "What's up, Nate 👋"
+    fontWeight: 'bold', // Make the main header bold
   },
   boxContainer: {
     flex: 1,
@@ -65,5 +92,13 @@ const styles = StyleSheet.create({
   },
   boxTitle: {
     textAlign: 'center',
+  },
+  collapsibleContent: {
+    paddingTop: 10,
+  },
+  bullet: {
+    fontSize: 16,
+    marginBottom: 4,
+    color: '#666', // Slightly darker gray for bullets
   },
 });
