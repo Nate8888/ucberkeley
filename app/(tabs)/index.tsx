@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, FlatList, Dimensions, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
@@ -16,30 +16,51 @@ export default function HomeScreen() {
   const [newsData, setNewsData] = useState(initialNewsData);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const fetchNewsData = async () => {
+      try {
+        const response = await fetch('https://backpropagators.uc.r.appspot.com/allDisasters');
+        const data = await response.json();
+        console.log(data);
+        const parsedData = data.map((item, index) => ({
+          id: String(index + 1),
+          headline: item.awareness,  // Adjust according to actual data structure
+          description: item.awareness_bullet_points ? item.awareness_bullet_points.join(', ') : '', // Adjust as necessary
+          severity: 'Placeholder',  // Adjust if actual severity data is available
+          exposure: 'Placeholder',  // Adjust if actual exposure data is available
+        }));
+        setNewsData(parsedData);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchNewsData();
+  }, []);
+
   const fetchMoreNews = () => {
     if (loading) return;
 
     setLoading(true);
-    setTimeout(() => {
-      const moreNews = [
-        {
-          id: String(newsData.length + 1),
-          headline: `News Headline ${newsData.length + 1}`,
-          description: `Short description of the news article ${newsData.length + 1}...`,
-          severity: 'Placeholder',
-          exposure: 'Placeholder',
-        },
-        {
-          id: String(newsData.length + 2),
-          headline: `News Headline ${newsData.length + 2}`,
-          description: `Short description of the news article ${newsData.length + 2}...`,
-          severity: 'Placeholder',
-          exposure: 'Placeholder',
-        },
-      ];
-      setNewsData([...newsData, ...moreNews]);
-      setLoading(false);
-    }, 1500);
+    // setTimeout(() => {
+    //   const moreNews = [
+    //     {
+    //       id: String(newsData.length + 1),
+    //       headline: `News Headline ${newsData.length + 1}`,
+    //       description: `Short description of the news article ${newsData.length + 1}...`,
+    //       severity: 'Placeholder',
+    //       exposure: 'Placeholder',
+    //     },
+    //     {
+    //       id: String(newsData.length + 2),
+    //       headline: `News Headline ${newsData.length + 2}`,
+    //       description: `Short description of the news article ${newsData.length + 2}...`,
+    //       severity: 'Placeholder',
+    //       exposure: 'Placeholder',
+    //     },
+    //   ];
+    //   setNewsData([...newsData, ...moreNews]);
+    //   setLoading(false);
+    // }, 1500);
   };
 
   const renderNewsItem = ({ item }) => (
