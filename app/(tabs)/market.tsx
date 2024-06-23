@@ -46,9 +46,9 @@ export default function MarketScreen() {
         <ThemedText style={styles.textSpacing}>{item.why}</ThemedText>
         {expandedItems[item.id] && (
           <>
-            <ThemedText type="subtitle" style={styles.boldText}>Industries of Impact</ThemedText>
+            <ThemedText type="subtitle" style={styles.boldText}>Impacted Industries</ThemedText>
             <ThemedText style={styles.textSpacing}>{item.potentialImpact}</ThemedText>
-            <ThemedText type="subtitle" style={styles.boldText}>Potential Impact:</ThemedText>
+            <ThemedText type="subtitle" style={styles.boldText}>Impacted Companies:</ThemedText>
             <ThemedText style={styles.textSpacing}>{item.main_companies_impacted}</ThemedText>
             <ThemedText type="subtitle" style={styles.boldText}>Potential Actions:</ThemedText>
             <ThemedText style={styles.textSpacing}>{item.potential_actions}</ThemedText>

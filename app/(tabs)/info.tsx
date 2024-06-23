@@ -18,9 +18,7 @@ export default function InfoScreen() {
           id: String(index + 1),
           event: item.event,
           description: item.description || item.speaker_summary,
-          impactedAreas: item.impacted_areas?.join(', '),
-          awareness: item.awareness,
-          speakerSummary: item.speaker_summary,
+          overcome: item.how_to_overcome?.ideas_to_overcome?.join(', '),
         }));
         setInfoData(parsedData);
       } catch (error) {
@@ -35,9 +33,8 @@ export default function InfoScreen() {
       <View style={styles.infoText}>
         <ThemedText type="subtitle">{item.event}</ThemedText>
         <ThemedText>{item.description}</ThemedText>
-        <ThemedText>Impacted Areas: {item.impactedAreas}</ThemedText>
-        <ThemedText>Awareness: {item.awareness}</ThemedText>
-        <ThemedText>Speaker Summary: {item.speakerSummary}</ThemedText>
+        <ThemedText type="subtitle">Suggestions to Overcome this:</ThemedText>
+        <ThemedText>{item.overcome}</ThemedText>
       </View>
     </View>
   );
@@ -101,4 +98,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     alignItems: 'center',
   },
+  subtitle: {
+    padding: 100
+  }
 });

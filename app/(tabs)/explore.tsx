@@ -15,6 +15,19 @@ export default function ExploreScreen() {
     });
   };
 
+  const generateRandomUSCoordinates = () => {
+    const latMin = 24.396308; // Southernmost point in the continental U.S.
+    const latMax = 49.384358; // Northernmost point in the continental U.S.
+    const lonMin = -125.0; // Westernmost point in the continental U.S.
+    const lonMax = -66.93457; // Easternmost point in the continental U.S.
+  
+    const latitude = Math.random() * (latMax - latMin) + latMin;
+    const longitude = Math.random() * (lonMax - lonMin) + lonMin;
+    return { latitude, longitude };
+  };
+  
+  const sampleCircles = Array.from({ length: 50 }, () => generateRandomUSCoordinates());
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -25,26 +38,21 @@ export default function ExploreScreen() {
         <MapView
           style={styles.map}
           initialRegion={{
-            latitude: 37.78825,
-            longitude: -122.4324,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
+            latitude: 37.0902,
+            longitude: -95.7129,
+            latitudeDelta: 100,
+            longitudeDelta: 100,
           }}
         >
-          <Circle
-            center={{ latitude: 37.78825, longitude: -122.4324 }}
-            radius={1000} // Radius in meters
-            strokeColor="rgba(0, 0, 255, 0.5)" // Outline color
-            fillColor="rgba(0, 0, 255, 0.1)" // Fill color
-          />
-          <Marker
-            coordinate={{ latitude: 37.78825, longitude: -122.4324 }}
-            onPress={handleMarkerPress}
-          >
-            <View style={styles.calloutView}>
-              <Text style={styles.calloutText}>This is a circle range</Text>
-            </View>
-          </Marker>
+{sampleCircles.map((circle, index) => (
+        <Circle
+          key={index}
+          center={circle}
+          radius={100000} // Radius in meters, adjust as needed
+          strokeColor="rgba(255, 0, 0, 0.5)" // Red outline color
+          fillColor="rgba(255, 0, 0, 0.2)" // Red fill color
+        />
+      ))}
         </MapView>
       </ScrollView>
     </View>

@@ -32,7 +32,8 @@ export default function HomeScreen() {
           exposure: item.awareness ? item.awareness : item.exposure?.awareness,  // Adjust if actual exposure data is available
           audio_url: item.audio_url
         }));
-        setNewsData(parsedData);
+
+        setNewsData(parsedData.splice(4));
       } catch (error) {
         console.error(error);
       }
@@ -112,9 +113,9 @@ export default function HomeScreen() {
       ListHeaderComponent={
         <>
           <ThemedView style={styles.titleContainer}>
-            <ThemedText type="title">What's up, Nate 👋</ThemedText>
+            <ThemedText type="title">Hey! I'm TAYLOR👋</ThemedText>
           </ThemedView>
-          <ThemedText style={styles.subtitle}>See what is going on in the world.</ThemedText>
+          <ThemedText style={styles.subtitle}>I'm your guide to global disaster knowledge. </ThemedText>
         </>
       }
       ListFooterComponent={
