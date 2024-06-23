@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, FlatList, Dimensions, StatusBar } from 'react-native';
+import { StyleSheet, View, Text, FlatList, Dimensions, StatusBar, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Audio } from 'expo-av';
 
 const initialNewsData = [
   { id: '1', headline: 'News Headline 1', description: 'Short description of the news article 1...', severity: '10/10', exposure: '5/10' },
@@ -15,6 +16,7 @@ const initialNewsData = [
 export default function HomeScreen() {
   const [newsData, setNewsData] = useState(initialNewsData);
   const [loading, setLoading] = useState(false);
+  const [sound, setSound] = useState(null);
 
   useEffect(() => {
     const fetchNewsData = async () => {
@@ -22,12 +24,14 @@ export default function HomeScreen() {
         const response = await fetch('https://backpropagators.uc.r.appspot.com/allDisasters');
         const data = await response.json();
         console.log(data);
+        // "impact":{"economic_impact":6,"environmental_impact":7,"health_impact":6,"human_impact":7,"infrastructure_impact":6,"social_impact":6}
         const parsedData = data.map((item, index) => ({
           id: String(index + 1),
-          headline: item.awareness,  // Adjust according to actual data structure
-          description: item.awareness_bullet_points ? item.awareness_bullet_points.join(', ') : '', // Adjust as necessary
-          severity: 'Placeholder',  // Adjust if actual severity data is available
-          exposure: 'Placeholder',  // Adjust if actual exposure data is available
+          headline: item.event,  // Adjust according to actual data structure
+          description: item.description ? item.description : item.speaker_summary, // Adjust as necessary
+          severity: Math.min(Math.ceil((item.impact.economic_impact + item.impact.environmental_impact + item.impact.health_impact + item.impact.human_impact + item.impact.infrastructure_impact + item.impact.social_impact) / 6 + 1), 10),  // Adjust if actual severity data is available
+          exposure: item.awareness ? item.awareness : item.exposure?.awareness,  // Adjust if actual exposure data is available
+          audio_url: item.audio_url
         }));
         setNewsData(parsedData);
       } catch (error) {
@@ -63,9 +67,25 @@ export default function HomeScreen() {
     // }, 1500);
   };
 
+  const playSound = async (url) => {
+    const { sound } = await Audio.Sound.createAsync({ uri: url });
+    setSound(sound);
+    await sound.playAsync();
+  };
+
+  useEffect(() => {
+    return sound
+      ? () => {
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
+
   const renderNewsItem = ({ item }) => (
     <View style={styles.newsItem} key={item.id}>
-      <Ionicons name="mic-outline" size={24} color="black" style={styles.speakerIcon} />
+      <TouchableOpacity onPress={() => playSound(item.audio_url)}>
+        <Ionicons name="mic-outline" size={24} color="black" style={styles.speakerIcon} />
+      </TouchableOpacity>
       <View style={styles.newsText}>
         <ThemedText type="subtitle">{item.headline}</ThemedText>
         <ThemedText>{item.description}</ThemedText>
